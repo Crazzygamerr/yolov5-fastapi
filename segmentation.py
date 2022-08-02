@@ -18,12 +18,13 @@ def get_yolov5():
 
 
 def get_image_from_bytes(
-	binary_image, 
+	# binary_image, 
+	input_image,
 	# max_size=1024, 
 	crop: ImageCrop = None,
 	):
-		input_image = Image.open(io.BytesIO(binary_image)).convert("RGB")
-		width, height = input_image.size
+		# input_image = Image.open(io.BytesIO(binary_image)).convert("RGB")
+		# width, height = input_image.size
 		# resize_factor = min(max_size / width, max_size / height)
 		# resized_image = input_image.resize(
 		#     (
@@ -42,3 +43,22 @@ def get_image_from_bytes(
 		else:
 			resized_image = input_image
 		return resized_image
+		
+def getInnerBoxes(
+	result,
+	crop: ImageCrop = None,
+):
+	if crop is None:
+		return result
+	
+	inner_boxes = []
+	for box in result:
+		if (float(box['xmin']) > crop.x 
+			and float(box['ymin']) > crop.y 
+			and float(box['xmax']) < crop.x + crop.width 
+			and float(box['ymax']) < crop.y + crop.height):
+			
+			inner_boxes.append(box)
+			
+	return inner_boxes
+	
