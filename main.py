@@ -1,12 +1,13 @@
-from fastapi import FastAPI, File, Request
+from fastapi import FastAPI, File, Request, UploadFile
 # import logging
-from segmentation import get_yolov5, get_image_from_bytes, getInnerBoxes
+from segmentation import get_yolov5, get_image_from_bytes, getInnerBoxes, saveFile
 from starlette.responses import Response
 import io
 from PIL import Image
 import json
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+import os
 
 # Command to start server
 # uvicorn main:app --reload --host 0.0.0.0 --port 8000
@@ -66,34 +67,49 @@ def get_health():
 
 
 @app.post("/object-to-json")
-async def detect_food_return_json_result(
+async def detect_digit_return_json_result(
 	request: Request,
-	file: bytes = File(...),
+	# file: bytes = File(...),
+	file: UploadFile
 	):
 		form = await request.form()
 		crop = None
-		input_image = Image.open(io.BytesIO(file)).convert("RGB")
+		file_bytes = file.file.read()
+		input_image = Image.open(io.BytesIO(file_bytes)).convert("RGB")
 			
 		results = model(input_image)
 		
 		detect_res = results.pandas().xyxy[0].to_json(orient="records")  # JSON img1 predictions
 		detect_res = json.loads(detect_res)
+		# get results.save() text file
+		detect_txt = results.save()
 		
 		if "crop" in form.keys() and form["crop"] is not None:
 			crop = ImageCrop(**json.loads(form["crop"]))
 		cropped_res = getInnerBoxes(detect_res, crop)
 		
+		saveFile(
+			input_image=input_image,
+			filename=file.filename,
+			crop=crop,
+			result_json=detect_res,
+			result_pandas=results.pandas().xyxy[0],
+			result_image=Image.fromarray(results.imgs[0]),
+		);
+		
 		return {"result": cropped_res}
 
 
 @app.post("/object-to-img")
-async def detect_food_return_base64_img(
+async def detect_digit_return_base64_img(
 	request: Request,
-	file: bytes = File(...),
+	# file: bytes = File(...),
+	file: UploadFile
 	):
 		form = await request.form()
 		crop = None
-		input_image = Image.open(io.BytesIO(file)).convert("RGB")
+		file_bytes = file.file.read()
+		input_image = Image.open(io.BytesIO(file_bytes)).convert("RGB")
 			
 		results = model(input_image)
 		results.render()  # updates results.imgs with boxes and labels
@@ -108,5 +124,14 @@ async def detect_food_return_base64_img(
 				
 			bytes_io = io.BytesIO()
 			cropped_result.save(bytes_io, format="jpeg")
+			
+		saveFile(
+			input_image=input_image,
+			filename=file.filename,
+			crop=crop,
+			result_json=results.pandas().xyxy[0].to_json(orient="records"),
+			# result_pandas=results.pandas().xyxy[0],
+			result_image=Image.fromarray(results.imgs[0]),
+		);
 		
 		return Response(content=bytes_io.getvalue(), media_type="image/jpeg")
