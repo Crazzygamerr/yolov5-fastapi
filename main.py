@@ -93,7 +93,7 @@ async def detect_digit_return_json_result(
 			filename=file.filename,
 			crop=crop,
 			result_json=detect_res,
-			result_pandas=results.pandas().xyxy[0],
+			result_pandas=results.pandas().xywh[0],
 			result_image=Image.fromarray(results.imgs[0]),
 		);
 		
@@ -130,7 +130,7 @@ async def detect_digit_return_base64_img(
 			filename=file.filename,
 			crop=crop,
 			result_json=results.pandas().xyxy[0].to_json(orient="records"),
-			# result_pandas=results.pandas().xyxy[0],
+			result_pandas=results.pandas().xywh[0],
 			result_image=Image.fromarray(results.imgs[0]),
 		);
 		

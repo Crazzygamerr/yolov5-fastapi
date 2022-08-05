@@ -93,16 +93,19 @@ def saveFile(
 	input_image.save("predictions/images/" + save_filename + "." + filename_extension)
 	if crop is not None:
 		with open(f"predictions/crop/{save_filename}.txt", "w") as f:
-			f.write(f"{crop.x},{crop.y},{crop.width},{crop.height}\n")
+			f.write(f"{crop.x} {crop.y} {crop.width} {crop.height}\n")
 	if result_json is not None:
 		with open(f"predictions/predicted_json/{save_filename}.json", "w") as f:
 			f.write(json.dumps(result_json))
 	if result_pandas is not None:
-		annotations = []
+		annotations = ""
 		for row in result_pandas.itertuples():
-			row_str = "" + str(row.xmin) + " " + str(row.ymin) + " " + str(row.xmax) + " " + str(row.ymax) + " " + str(row.label) + "," + str(row.confidence) + "\n"
-			annotations.append(row_str)
-		print(annotations)
+			# class xcenter ycenter xwidth ywidth
+			row_str = "" + str(row[6]) + " " + str(row[1])  + " " + str(row[2])  + " " + str(row[3])  + " " + str(row[4]) + "\n"
+			annotations += row_str
+		
+		with open(f"predictions/predicted_annotations/{save_filename}.txt", "w") as f:
+			f.write(annotations)
 		
 	if result_image is not None:
 		result_image.save(f"predictions/predicted_images/{save_filename}.png")		
